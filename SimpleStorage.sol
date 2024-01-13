@@ -12,10 +12,9 @@ pragma solidity 0.8.8;
 contract SimpleStorage{
     uint256 favoriteNumber = 5;
     
-    function store(uint256 _favoriteNumber) public {
+    //Reason for the virtual keyword is mentioned in the ExtraStorage.sol
+    function store(uint256 _favoriteNumber) public virtual {
         favoriteNumber = _favoriteNumber;
-        favoriteNumber = favoriteNumber*2;
-        retrieve();
     }
 
     //in solidity variables inside object is like element of array. below at index 0, there is favoriteNumber and at index 1 is name
