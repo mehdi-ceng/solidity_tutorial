@@ -12,8 +12,7 @@ pragma solidity 0.8.8;
 contract SimpleStorage{
     uint256 favoriteNumber = 5;
     
-    //Reason for the virtual keyword is mentioned in the ExtraStorage.sol
-    function store(uint256 _favoriteNumber) public virtual {
+    function store(uint256 _favoriteNumber) public {
         favoriteNumber = _favoriteNumber;
     }
 
