@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: MIT
+
+//Peeople can fund
+//Owner of the conractor can withdraw
+//Contract has minumum limit for funding
+
+pragma solidity 0.8.24;
+
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {PriceConvertor} from "./PriceConvertor.sol";
+
+contract FundMe{
+    using PriceConvertor for uint256;
+
+    //Minimm amount to deploy contract in usd => 5 usd, but decimal reasons
+    //constant keyword is used for gas efficiency
+    uint256 public constant MIN_USD = 5e18; 
+
+    //To keep track of all funders and how much money they've funded
+    address[] public funders;
+    mapping(address => uint256) public addressToAmount; 
+
+    //To set owner of contract
+    //immutable keyword is used for gas efficency
+    address public immutable i_owner;
+    //This is executed same time as contract is deployed
+    constructor(){
+        i_owner = msg.sender;
+    }
+
+    function fund() public payable {
+        //setting minimum amount 
+        require(msg.value.getConversionRate() >= MIN_USD, "Min amount is 1ETH");
+        funders.push(msg.sender);
+        addressToAmount[msg.sender] = addressToAmount[msg.sender] + msg.value;
+    }
+
+    function getVersion() public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF);
+        return priceFeed.version();
+    }
+
+    function withdraw() public onlyOwner{
+        
+        //All data in mapping becomes zero as we withdrar all money
+        for(uint256 funderIndex = 0; funderIndex<funders.length; funderIndex++){
+            address funderAddress =funders[funderIndex];
+            addressToAmount[funderAddress] =0;
+
+        }
+        //Then funders array is "emptied" by reassinging it to the empty array
+        funders = new address[](0);
+
+        //Three different ways to withdraw native currency
+        //Using transfer keyword
+        //msg.sender is type of address, but transfer can bu used for payable address, thus type cast
+        //payable(msg.sender).transfer(address(this).balance);
+        //Using send keyword
+        //bool sendSuccess = payable(msg.sender).send(address(this).balance);
+        //require(sendSuccess, "Send failed");
+        //Using call keyword
+        (bool callSuccess,)=payable(msg.sender).call{value: address(this).balance}("");
+        require(callSuccess, "Call failed");
+
+    }
+
+    modifier onlyOwner(){
+        //Only owner of the contract can withdraw
+        require(msg.sender == i_owner, "Only owner of the contract can withdraw fund");
+        _;
+    }
+
+    //if msg.data is empty receive() is evoked
+    receive() external payable { fund(); }
+    //if msg.data has data in it, but this data does not correspond to the any function, then fallback() is evoked
+    fallback() external payable { fund(); }
+}
